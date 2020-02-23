@@ -1,3 +1,4 @@
+#include <Adafruit_NeoPixel.h>
 #include "LiquidCrystal.h"
 
 /*
@@ -23,6 +24,9 @@ bool BACKLIGHT_STATE = true; // true is on; false is off
 /*
  * Timing variables
  */
+
+// For accurate Time reading, use Arduino Real Time Clock and not just delay()
+static uint32_t last_time, now = 0; // RTC
 
 // initial Time
 int HOURS = 0;
@@ -50,8 +54,22 @@ int HOURS_PIN = 0; // button for hour selection
 int MINUTES_PIN = 1; // button for minute selection
 int DAY_SWITCH_PIN = 11; // button for switching mode
 
-// For accurate Time reading, use Arduino Real Time Clock and not just delay()
-static uint32_t last_time, now = 0; // RTC
+/*
+ * led configuration
+ */
+
+const int LED_PIN = 12;
+const int LED_COUNT = 24;
+
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+// Argument 1 = Number of pixels in NeoPixel strip
+// Argument 2 = Arduino pin number (most are valid)
+// Argument 3 = Pixel type flags, add together as needed:
+//   NEO_KHZ800  800 KHz bitstream (most NeoPixel products w/WS2812 LEDs)
+//   NEO_KHZ400  400 KHz (classic 'v1' (not v2) FLORA pixels, WS2811 drivers)
+//   NEO_GRB     Pixels are wired for GRB bitstream (most NeoPixel products)
+//   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
+//   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
 void handleTimeOverflow() {
   if (SECONDS == 60){
@@ -131,7 +149,13 @@ void handleMinuteCheck() {
 }
 
 void setup() {
+  Serial.begin(9600); 
+
   lcd.begin(16,2);
+
+  strip.begin();
+  strip.show();
+  strip.setPixelColor(0, 235, 192, 66);
 
   // BUTTON PINS
   pinMode(HOURS_PIN,INPUT_PULLUP);
@@ -143,10 +167,7 @@ void setup() {
   analogWrite(BACKLIGHT_PIN,BACKLIGHT_VALUE); // Turn on Backlight
   BACKLIGHT_STATE = true;
 
-  now=millis(); // read RTC initial value  
-
-  // TODO: remove debugging
-  Serial.begin(9600); // open the serial port at 9600 bps:
+  now=millis(); // read RTC initial value
 }
 
 
