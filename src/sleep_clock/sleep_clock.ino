@@ -1,15 +1,3 @@
-/*
- ###  simplest ever Arduino UNO digital clock  ###
- This clock needs only a 1602 LCD 2X16 and 2 push buttons 
- No Potentiometer for contrast, no resistors for pull-up or backlight !!!!
- * The simplest clock ever made with a Arduino UNO *    
- Button Functions:
- - short stroke on one of the buttons put Backlight on for 30 s
- Time settings
- - Press on H increments the Hours
- - Press on M increments the Minutes and resets the seconds
-*/
-
 #include "LiquidCrystal.h"
 
 // This defines the LCD wiring to the DIGITALpins
@@ -17,15 +5,15 @@ const int rs = 2, en = 3, d4 = 4, d5 = 5, d6 = 6, d7 = 7;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 // Digital LCD Constrast setting
-int CONTRAST_PIN=9;// pin 9 for contrast PWM
+int CONTRAST_PIN = 9;// pin 9 for contrast PWM
 const int CONTRAST_VALUE = 100;// default contrast
 
-// Backlight
-const int RESET_TIME=100; // times 200ms
-int BACKLIGHT_TIMEOUT=RESET_TIME;// Backlight Time-Out
+// Backglight setting
+const int RESET_TIME = 10 * 5; // seconds * 5 for 200ms loop
+int BACKLIGHT_TIMEOUT = RESET_TIME;// set initital timeout
 
-int BACKLIGHT_PIN=10; // Backlight pin
-const int BACKLIGHT_VALUE=50; // no more then 7mA !!!
+int BACKLIGHT_PIN = 10; // Backlight pin
+const int BACKLIGHT_VALUE = 50; // no more then 7mA !!! default was 120
 
 // initial Time
 int HOURS=0;
@@ -36,7 +24,6 @@ int SECONDS=0;
 const int TWELVE_HOUR_MINUTES = 720;
 const int TWENTYFOUR_HOUR_MINUTES = 1440;
 
-
 // day/night switch hours - this defines when the day starts
 int DAY_HOURS=8;
 int DAY_MINUTES=0;
@@ -45,31 +32,29 @@ int CURRENT_STATE = 0; // 0 = night; 1 = day;
 float CURRENT_PERCENT_PASSED = 0;
 
 // Time Set Buttons
-int HOURS_BUTTON;
-int MINUTES_BUTTON;
-int DAY_SWITCH_BUTTON;
+int HOURS_BUTTON_VALUE;
+int MINUTES_BUTTON_VALUE;
+int DAY_SWITCH_BUTTON_VALUE;
 
-// Pins definition for Time Set Buttons
-int HOURS_PIN=0; // pin 0 for Hours Setting
-int MINUTES_PIN=1; // pin 1 for Minutes Setting
-
-int DAY_SWITCH_PIN=11; // pin 1 for Minutes Setting
-
+// Pins definition for Buttons
+int HOURS_PIN = 0; // button for hour selection
+int MINUTES_PIN = 1; // button for minute selection
+int DAY_SWITCH_PIN=11; // button for switching mode
 
 // For accurate Time reading, use Arduino Real Time Clock and not just delay()
 static uint32_t last_time, now = 0; // RTC
 
 void handleTimeOverflow() {
-  if(SECONDS==60){
-    SECONDS=0;
-    MINUTES=MINUTES+1;
+  if(SECONDS == 60){
+    SECONDS = 0;
+    MINUTES = MINUTES + 1;
   }
-  if(MINUTES==60) {
-    MINUTES=0;
-    HOURS=HOURS+1;
+  if(MINUTES == 60) {
+    MINUTES = 0;
+    HOURS = HOURS + 1;
   }
-  if(HOURS==24) {
-    HOURS=0;
+  if(HOURS == 24) {
+    HOURS = 0;
   }
   if(DAY_MINUTES == 60) {
     DAY_MINUTES = 0;
@@ -90,22 +75,23 @@ void printTwoDigitValue(int value) {
 
 void printDisplay() {
   lcd.begin(16,2);
+  // Line 1
   lcd.setCursor(0,0);
   lcd.print("Time    ");
+
   printTwoDigitValue(HOURS);
   lcd.print(":");
   printTwoDigitValue(MINUTES);
   lcd.print(":");
   printTwoDigitValue(SECONDS);
 
-  lcd.setCursor(0,1); // for Line 2
+  // Line 2
+  lcd.setCursor(0,1); 
   lcd.print(CURRENT_STATE ? 'D' : 'N');
   lcd.print(" ");
   printTwoDigitValue(round(CURRENT_PERCENT_PASSED * 100));
   lcd.print("%     ");
 
-  //lcd.print(" ");
-  //lcd.print("Day Start  ");
   printTwoDigitValue(DAY_HOURS);
   lcd.print(":");
   printTwoDigitValue(DAY_MINUTES);
@@ -133,12 +119,15 @@ void handleMinuteCheck() {
 void setup() {
   lcd.begin(16,2);
 
-  pinMode(HOURS_PIN,INPUT_PULLUP);// avoid external Pullup resistors for Button 1
-  pinMode(MINUTES_PIN,INPUT_PULLUP);// and Button 2
-  pinMode(DAY_SWITCH_PIN,INPUT_PULLUP);// and Button 3
+  // BUTTON PINS
+  pinMode(HOURS_PIN,INPUT_PULLUP);
+  pinMode(MINUTES_PIN,INPUT_PULLUP);
+  pinMode(DAY_SWITCH_PIN,INPUT_PULLUP);
 
-  analogWrite(CONTRAST_PIN,CONTRAST_VALUE);// Adjust Contrast VO
-  analogWrite(BACKLIGHT_PIN,BACKLIGHT_VALUE);// Turn on Backlight
+  // LCD PINS
+  analogWrite(CONTRAST_PIN,CONTRAST_VALUE); // Adjust Contrast VO
+  analogWrite(BACKLIGHT_PIN,BACKLIGHT_VALUE); // Turn on Backlight
+
   now=millis(); // read RTC initial value  
 
   // TODO: remove debugging
@@ -148,69 +137,74 @@ void setup() {
 
 void loop() {
   printDisplay();
-  // improved replacement of delay(1000) 
-  // Much better accuracy, no more dependant of loop execution time
-
-  for (int i=0; i<5; i++) { // make 5 time 200ms loop, for faster Button response
-
-    while ((now-last_time)<200) { //delay200ms
+  // make 5 time 200ms loop, for faster button response
+  for (int i = 0; i < 5; i++ ) { 
+    while ((now-last_time) < 200) { //delay200ms
       now=millis();
     }
   
-    last_time=now; // prepare for next loop 
+    last_time = now;
 
     // read Setting Buttons
-    HOURS_BUTTON=digitalRead(HOURS_PIN);
-    MINUTES_BUTTON=digitalRead(MINUTES_PIN);
-    DAY_SWITCH_BUTTON=digitalRead(DAY_SWITCH_PIN);
+    HOURS_BUTTON_VALUE = digitalRead(HOURS_PIN);
+    MINUTES_BUTTON_VALUE = digitalRead(MINUTES_PIN);
+    DAY_SWITCH_BUTTON_VALUE = digitalRead(DAY_SWITCH_PIN);
 
     //Backlight time out 
     BACKLIGHT_TIMEOUT--;
-    if(BACKLIGHT_TIMEOUT==0) {
-      analogWrite(BACKLIGHT_PIN,0);// Backlight OFF
+
+    if(BACKLIGHT_TIMEOUT == 0) {
+      analogWrite(BACKLIGHT_PIN,0); // Backlight OFF
       BACKLIGHT_TIMEOUT++;
     }
-    
+
     // Hit any to activate Backlight 
-    if(((HOURS_BUTTON==0)|(MINUTES_BUTTON==0)) & (BACKLIGHT_TIMEOUT==1)) {
+    if((HOURS_BUTTON_VALUE == LOW | MINUTES_BUTTON_VALUE == LOW | DAY_SWITCH_BUTTON_VALUE == LOW) & (BACKLIGHT_TIMEOUT == 1)) {
+
+
       BACKLIGHT_TIMEOUT=RESET_TIME;
       analogWrite(BACKLIGHT_PIN,BACKLIGHT_VALUE);
       // wait until Button released
-      while ((HOURS_BUTTON==0)|(MINUTES_BUTTON==0)) {
-      HOURS_BUTTON=digitalRead(HOURS_PIN);// Read Buttons
-      MINUTES_BUTTON=digitalRead(MINUTES_PIN);
+      while (HOURS_BUTTON_VALUE == LOW | MINUTES_BUTTON_VALUE == LOW | DAY_SWITCH_BUTTON_VALUE == LOW) {
+        HOURS_BUTTON_VALUE = digitalRead(HOURS_PIN);// Read Buttons
+        MINUTES_BUTTON_VALUE = digitalRead(MINUTES_PIN);
+        DAY_SWITCH_BUTTON_VALUE = digitalRead(DAY_SWITCH_PIN);
       }
     } else { // Process Button 1 or Button 2 when hit while Backlight on 
-      if(HOURS_BUTTON==0) {
-        if (DAY_SWITCH_BUTTON==0) {
-          DAY_HOURS=DAY_HOURS+1;
+
+      if(HOURS_BUTTON_VALUE == LOW) {
+        if (DAY_SWITCH_BUTTON_VALUE == LOW) {
+          DAY_HOURS = DAY_HOURS + 1;
         } else {
-          HOURS=HOURS+1;
+          HOURS = HOURS + 1;
         }
-        BACKLIGHT_TIMEOUT=RESET_TIME;
+        BACKLIGHT_TIMEOUT = RESET_TIME;
         analogWrite(BACKLIGHT_PIN,BACKLIGHT_VALUE);
       }
 
-      if(MINUTES_BUTTON==0) {
-        if (DAY_SWITCH_BUTTON==0) {
-          DAY_MINUTES=DAY_MINUTES+1;
+      if(MINUTES_BUTTON_VALUE == LOW) {
+        if (DAY_SWITCH_BUTTON_VALUE == LOW) {
+          DAY_MINUTES = DAY_MINUTES + 1;
         } else {
-          SECONDS=0;
-          MINUTES=MINUTES+1;
+          SECONDS = 0;
+          MINUTES = MINUTES + 1;
         }
-        BACKLIGHT_TIMEOUT=RESET_TIME;
+        BACKLIGHT_TIMEOUT = RESET_TIME;
         analogWrite(BACKLIGHT_PIN,BACKLIGHT_VALUE);
       }
+
+
 
       handleTimeOverflow();
 
-      if((HOURS_BUTTON==0)|(MINUTES_BUTTON==0)) { // Update display if time set button pressed
+      if( HOURS_BUTTON_VALUE == LOW | MINUTES_BUTTON_VALUE == LOW ) { // Update display if time set button pressed
         printDisplay();
       }
     }
   }
 
-  SECONDS=SECONDS+1; // increment seconds
+  // increment seconds
+  SECONDS = SECONDS + 1;
   if (SECONDS == 60) {
     handleMinuteCheck();
   }
