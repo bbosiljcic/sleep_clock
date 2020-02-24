@@ -241,6 +241,7 @@ void loop() {
 
   // TODO: remove this line below just for debugging
   handleMinuteCheck();
+  
   handleTimeOverflow();
 }
 
