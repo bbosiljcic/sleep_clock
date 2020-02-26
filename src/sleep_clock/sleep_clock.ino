@@ -62,6 +62,8 @@ const int LED_PIN = 12;
 const int LED_COUNT = 24;
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+uint32_t day = strip.Color(252, 186, 3);
+uint32_t night = strip.Color(61, 3, 252);
 // Argument 1 = Number of pixels in NeoPixel strip
 // Argument 2 = Arduino pin number (most are valid)
 // Argument 3 = Pixel type flags, add together as needed:
@@ -154,8 +156,11 @@ void setup() {
   lcd.begin(16,2);
 
   strip.begin();
-  strip.show();
-  strip.setPixelColor(0, 235, 192, 66);
+
+  strip.setBrightness(10);
+  strip.fill(day, 0, 11);
+  strip.fill(night, 11, 23);
+
 
   // BUTTON PINS
   pinMode(HOURS_PIN,INPUT_PULLUP);
@@ -172,6 +177,8 @@ void setup() {
 
 
 void loop() {
+  strip.show();
+
   printDisplay();
   // make 5 time 200ms loop, for faster button response
   for (int i = 0; i < 5; i++ ) { 
