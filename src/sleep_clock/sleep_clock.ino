@@ -158,8 +158,8 @@ void setup() {
   strip.begin();
 
   strip.setBrightness(10);
-  strip.fill(day, 0, 11);
-  strip.fill(night, 11, 23);
+  strip.fill(day, 0, 12);
+  strip.fill(night, 12, 12);
 
 
   // BUTTON PINS
