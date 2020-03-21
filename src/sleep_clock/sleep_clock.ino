@@ -1,24 +1,14 @@
 #include <Adafruit_NeoPixel.h>
-#include "LiquidCrystal.h"
 
-/*
- * lcd setup
- */
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-// This defines the LCD wiring to the DIGITALpins
-const int rs = 2, en = 3, d4 = 4, d5 = 5, d6 = 6, d7 = 7;
-LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
-
-// Digital LCD Constrast setting
-int CONTRAST_PIN = 9; // pin 9 for contrast PWM
-const int CONTRAST_VALUE = 100; // default contrast
 
 // Backglight setting
 const int RESET_TIME = 10; // in seconds
 int BACKLIGHT_TIMEOUT = RESET_TIME;// set initital timeout
 
-int BACKLIGHT_PIN = 10; // Backlight pin
-const int BACKLIGHT_VALUE = 50; // no more then 7mA !!! default was 120
 bool BACKLIGHT_STATE = true; // true is on; false is off
 
 /*
@@ -50,13 +40,9 @@ int MINUTES_BUTTON_VALUE;
 int DAY_SWITCH_BUTTON_VALUE;
 
 // Pins definition for Buttons
-int HOURS_PIN = 0; // button for hour selection
-int MINUTES_PIN = 1; // button for minute selection
+int HOURS_PIN = 9; // button for hour selection
+int MINUTES_PIN = 10; // button for minute selection
 int DAY_SWITCH_PIN = 11; // button for switching mode
-
-/*
- * led configuration
- */
 
 const int LED_PIN = 12;
 const int LED_COUNT = 24;
@@ -121,7 +107,20 @@ void printDisplay() {
 
 void resetBacklightTimeout() {
   BACKLIGHT_TIMEOUT=RESET_TIME;
-  analogWrite(BACKLIGHT_PIN,BACKLIGHT_VALUE);
+  lcd.backlight(); 
+}
+
+void setLEDs() {
+  float PERCENT_LEFT = 1.0 - CURRENT_PERCENT_PASSED;
+  float LED_LEFT =  PERCENT_LEFT * 12.0;
+  int LED_PAST = 12 - (int) LED_LEFT;
+  strip.clear();
+  if (CURRENT_STATE) {
+    strip.fill(day, 0 + LED_PAST, LED_LEFT);
+  } else {
+    strip.fill(night, 12 + LED_PAST, LED_LEFT);
+
+  }
 }
 
 void handleMinuteCheck() {
@@ -141,12 +140,15 @@ void handleMinuteCheck() {
     CURRENT_PERCENT_PASSED = (float)(currentTimeMinutes - dayTimeMinutes) / (float)TWELVE_HOUR_MINUTES;
     CURRENT_STATE = 1;
   }
+
+  setLEDs();
 }
 
 void setup() {
   Serial.begin(9600); 
 
-  lcd.begin(16,2);
+  lcd.init(); 
+  lcd.backlight(); 
 
   strip.begin();
 
@@ -161,8 +163,6 @@ void setup() {
   pinMode(DAY_SWITCH_PIN,INPUT_PULLUP);
 
   // LCD PINS
-  analogWrite(CONTRAST_PIN,CONTRAST_VALUE); // Adjust Contrast VO
-  analogWrite(BACKLIGHT_PIN,BACKLIGHT_VALUE); // Turn on Backlight
   BACKLIGHT_STATE = true;
 
   now=millis(); // read RTC initial value
@@ -175,7 +175,7 @@ void loop() {
   printDisplay();
   // make 5 time 200ms loop, for faster button response
   for (int i = 0; i < 5; i++ ) { 
-    while ((now-last_time) < 200) { //delay200ms
+    while ((now-last_time) < 200) { // delay 200ms
       now=millis();
     }
   
@@ -189,7 +189,7 @@ void loop() {
     // hit any button while the backlight is off
     if ((HOURS_BUTTON_VALUE == LOW | MINUTES_BUTTON_VALUE == LOW | DAY_SWITCH_BUTTON_VALUE == LOW) & (BACKLIGHT_STATE == false)) {
       BACKLIGHT_TIMEOUT = RESET_TIME;
-      analogWrite(BACKLIGHT_PIN,BACKLIGHT_VALUE);
+      lcd.backlight(); 
       BACKLIGHT_STATE = true;
       // wait until Button released
       while (HOURS_BUTTON_VALUE == LOW | MINUTES_BUTTON_VALUE == LOW | DAY_SWITCH_BUTTON_VALUE == LOW) {
@@ -235,7 +235,7 @@ void loop() {
   BACKLIGHT_TIMEOUT--;
   if (BACKLIGHT_TIMEOUT == 0) {
     // turn the backlight off
-    analogWrite(BACKLIGHT_PIN,0);
+    lcd.noBacklight();
     BACKLIGHT_STATE = false;
   }
 
